@@ -1,0 +1,143 @@
+<!--APIなし-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8" />
+    <title>手書き認証アプリ</title>
+    <style>
+
+        .container {
+            position: relative;
+        }
+
+        #mainCanvas {
+            border: solid;
+            touch-action: none;
+        }
+
+    </style>
+    <script>
+        // 変数の定義
+        var flag = false    // 書いているかどうかのフラグ
+        var taglist = []
+        var idlist = []
+        var xlist = []
+        var ylist = []
+        var presslist = []
+        var timelist = []
+
+        window.addEventListener('load', () => {
+            // イベントの呼び出し
+            var Time = new Date()
+            var mainCanvas = document.getElementById('mainCanvas')
+            
+            // キャンバスの大きさの定義
+            mainCanvas.width = 600
+            mainCanvas.height = 400
+
+            // 描画の開始
+            function start(e) {
+                flag = true
+                // 始点の記録
+                startX = e.offsetX
+                startY = e.offsetY
+            }
+            // 描画
+            function draw(e) {
+                if (e.buttons != 0 || e.pressure > 0.0 || flag == true) {
+                    // コンテキストの取得
+                    var mainCanvas = document.getElementById('mainCanvas')
+                    var context    = mainCanvas.getContext('2d')
+
+                    var x = e.offsetX
+                    var y = e.offsetY
+
+                    // 線の定義
+                    context.lineWidth = 3
+                    context.strokeStyle = `rgba(0, 0, 0, 1.0)`
+                    //context.fillStyle = `rgba(0, 0, 0, 1.0)`
+                    context.beginPath()
+                    context.moveTo(startX  , startY)
+                    context.lineTo(x , y)
+                    context.closePath()
+                    context.stroke()
+
+                    // 始点の更新
+                    startX = x
+                    startY = y
+                }
+
+            }
+
+            function end (){
+                flag = false
+            }
+
+            // 線の描画
+            // 開始地点の記録
+            mainCanvas.addEventListener('pointerdown',(e)=>{
+                log('pointerdown',e)
+                start(e)
+                e.preventDefault()
+            })
+            // 描画中のデータの記録
+            mainCanvas.addEventListener('pointermove',(e)=>{
+                log('pointermove',e)
+                draw(e)
+                e.preventDefault()
+            })
+            // 終了地点の記録
+            mainCanvas.addEventListener('pointerup',(e)=>{
+                log('pointerup',e)
+                end(e)
+                e.preventDefault()
+            })
+
+            // ログの出力
+            function log(tag, e) {
+                taglist.push(tag)
+                timelist.push(Date.now()-Time.getTime())
+                idlist.push(e.pointerId)
+                xlist.push(e.offsetX)
+                ylist.push(e.offsetY)
+                presslist.push(e.pressure)
+                console.log(Date.now()-Time.getTime(),tag, e.pointerId, e.offsetX, e.offsetY, e.buttons, e.pressure)
+            }
+        })
+        function SendData(){
+            var data = JSON.stringify(
+                {
+                    tag: this.taglist,
+                    time: this.timelist,
+                    id: this.idlist,
+                    x: this.xlist,
+                    y: this.ylist,
+                    press: this.presslist 
+                }
+            )
+
+            // 保存
+            const link = document.createElement("a")
+
+            link.href = "data:text/plain," + encodeURIComponent(data)
+
+            var now = Date.now()
+
+            out_path = now + ".json"
+
+            link.download = out_path
+
+            link.click()
+
+            window.location.reload()
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>ここに記入してください</h1>
+        <canvas id="mainCanvas"></canvas>
+        <input type="button" value="送信" onclick="SendData()">
+    </div>
+</body>
+</html>
